@@ -1,5 +1,9 @@
 name: 'Golang Versioner'
 description: 'A lightweight versioning system based on changesets and targeted for Go.'
+inputs:
+    github-token:
+        description: 'The GitHub token to use for authentication.'
+        required: true
 runs:
   using: "composite"
   steps:
@@ -49,7 +53,7 @@ runs:
       id: changesets
       uses: changesets/action@v1
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
     - name: Release
       uses: softprops/action-gh-release@v2
       if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'changeset-release/')
@@ -57,4 +61,4 @@ runs:
         generate_release_notes: true
         make_latest: true
         tag_name: "v${{ steps.versioner.outputs.version }}"
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ inputs.github-token }}
