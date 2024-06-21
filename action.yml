@@ -1,0 +1,57 @@
+name: 'Golang Versioner'
+description: 'A lightweight versioning system based on changesets and targeted for Go.'
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout Repo
+      uses: actions/checkout@v4
+    - name: Versioner Setup
+      id: versioner
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git config --global init.defaultBranch ${{ github.ref_name }}
+        if [ ! -f "package.json" ]; then
+          json="{\"name\":\"@${{ github.repository }}\",\"private\":true,\"version\":\"0.0.0\",\"packageManager\":\"pnpm@8.8.0\"}"
+          echo $json > package.json
+          touch .gitignore
+          if ! grep -q "node_modules" .gitignore; then
+            echo "node_modules" >> .gitignore
+          fi
+          if ! grep -q "pnpm-lock.yaml" .gitignore; then
+            echo "pnpm-lock.yaml" >> .gitignore
+          fi
+          git add package.json .gitignore
+          git commit -m "chore: versioning setup"
+          git push
+        fi
+        echo "VERSION=$(jq -r .version package.json)" >> $GITHUB_OUTPUT
+    - name: Setup Node.js 20.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+    - uses: pnpm/action-setup@v4
+      if: github.event_name == 'push'
+    - name: Install Dependencies
+      if: github.event_name == 'push'
+      run: |
+        pnpm add @changesets/cli
+    - name: Setup Node Path
+      if: github.event_name == 'push'
+      run: |
+        echo "${{ github.workspace }}/node_modules/.bin" >> $GITHUB_PATH
+    - uses: pnpm/action-setup@v4
+    - name: Create Release Pull Request
+      if: github.event_name == 'push'
+      id: changesets
+      uses: changesets/action@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'changeset-release/')
+      with:
+        generate_release_notes: true
+        make_latest: true
+        tag_name: "v${{ steps.versioner.outputs.version }}"
+        token: ${{ secrets.GITHUB_TOKEN }}
