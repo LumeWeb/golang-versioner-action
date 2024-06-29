@@ -20,12 +20,13 @@ runs:
           json="{\"name\":\"@${{ github.repository }}\",\"private\":true,\"version\":\"0.0.0\",\"packageManager\":\"pnpm@8.8.0\"}"
           echo $json > package.json
           touch .gitignore
-          if ! grep -q "node_modules" .gitignore; then
+        fi
+        if ! grep -q "node_modules" .gitignore; then
             echo "node_modules" >> .gitignore
-          fi
+        fi
           if ! grep -q "pnpm-lock.yaml" .gitignore; then
             echo "pnpm-lock.yaml" >> .gitignore
-          fi
+        fi
           git add package.json .gitignore
           git commit -m "chore: versioning setup"
           git push
