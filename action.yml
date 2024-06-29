@@ -20,16 +20,23 @@ runs:
           json="{\"name\":\"@${{ github.repository }}\",\"private\":true,\"version\":\"0.0.0\",\"packageManager\":\"pnpm@8.8.0\"}"
           echo $json > package.json
           touch .gitignore
+          git add package.json
         fi
         if ! grep -q "node_modules" .gitignore; then
             echo "node_modules" >> .gitignore
+            git add .gitignore
         fi
-          if ! grep -q "pnpm-lock.yaml" .gitignore; then
+        if ! grep -q "pnpm-lock.yaml" .gitignore; then
             echo "pnpm-lock.yaml" >> .gitignore
+            git add .gitignore
         fi
-          git add package.json .gitignore
+        changes_exist=$(git status --porcelain)
+        if [ -n "$changes_exist" ]; then
+          echo "Changes exist that need to be committed"
           git commit -m "chore: versioning setup"
           git push
+        else
+          echo "No changes need to be committed"
         fi
         echo "VERSION=$(jq -r .version package.json)" >> $GITHUB_OUTPUT
     - name: Setup Node.js 20.x
