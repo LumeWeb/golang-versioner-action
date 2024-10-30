@@ -24,11 +24,11 @@ runs:
           git add package.json
         fi
         if ! grep -q "node_modules" .gitignore; then
-            echo "node_modules" >> .gitignore
+            echo -e "node_modules\n" >> .gitignore
             git add .gitignore
         fi
         if ! grep -q "pnpm-lock.yaml" .gitignore; then
-            echo "pnpm-lock.yaml" >> .gitignore
+            echo -e "pnpm-lock.yaml\n" >> .gitignore
             git add .gitignore
         fi
         changes_exist=$(git status --porcelain)
@@ -42,18 +42,18 @@ runs:
         echo "VERSION=$(jq -r .version package.json)" >> $GITHUB_OUTPUT
 
     - name: Setup PNPM
-      if: github.event_name == 'push'
+      if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
       uses: pnpm/action-setup@v4
 
     - name: Setup Dependencies for Changesets
-      if: github.event_name == 'push'
+      if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
       shell: bash
       run: |
         pnpm add @changesets/cli
         echo "${{ github.workspace }}/node_modules/.bin" >> $GITHUB_PATH
 
     - name: Create Release Pull Request
-      if: github.event_name == 'push'
+      if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
       uses: changesets/action@v1
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
