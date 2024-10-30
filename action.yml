@@ -1,9 +1,9 @@
 name: 'Golang Versioner'
 description: 'A lightweight versioning system based on changesets and targeted for Go.'
 inputs:
-    github-token:
-        description: 'The GitHub token to use for authentication.'
-        required: true
+  github-token:
+    description: 'The GitHub token to use for authentication.'
+    required: true
 runs:
   using: "composite"
   steps:
@@ -39,32 +39,29 @@ runs:
           echo "No changes need to be committed"
         fi
         echo "VERSION=$(jq -r .version package.json)" >> $GITHUB_OUTPUT
-    - name: Setup Node.js 20.x
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20.x
-    - uses: pnpm/action-setup@v4
+
+    # Only run changesets workflow on push events
+    - name: Setup Dependencies for Changesets
       if: github.event_name == 'push'
-    - name: Install Dependencies
       shell: bash
-      if: github.event_name == 'push'
       run: |
         pnpm add @changesets/cli
-    - name: Setup Node Path
-      if: github.event_name == 'push'
-      shell: bash
-      run: |
         echo "${{ github.workspace }}/node_modules/.bin" >> $GITHUB_PATH
-    - uses: pnpm/action-setup@v4
+      uses: pnpm/action-setup@v4
+
     - name: Create Release Pull Request
       if: github.event_name == 'push'
-      id: changesets
       uses: changesets/action@v1
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
+
+    # Only run release on merged PRs from changeset-release branches
     - name: Release
       uses: softprops/action-gh-release@v2
-      if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'changeset-release/')
+      if: |
+        github.event_name == 'pull_request' && 
+        github.event.pull_request.merged == true && 
+        startsWith(github.event.pull_request.head.ref, 'changeset-release/')
       with:
         generate_release_notes: true
         make_latest: true
