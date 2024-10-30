@@ -9,6 +9,7 @@ runs:
   steps:
     - name: Checkout Repo
       uses: actions/checkout@v4
+
     - name: Versioner Setup
       shell: bash
       id: versioner
@@ -40,14 +41,16 @@ runs:
         fi
         echo "VERSION=$(jq -r .version package.json)" >> $GITHUB_OUTPUT
 
-    # Only run changesets workflow on push events
+    - name: Setup PNPM
+      if: github.event_name == 'push'
+      uses: pnpm/action-setup@v4
+
     - name: Setup Dependencies for Changesets
       if: github.event_name == 'push'
       shell: bash
       run: |
         pnpm add @changesets/cli
         echo "${{ github.workspace }}/node_modules/.bin" >> $GITHUB_PATH
-      uses: pnpm/action-setup@v4
 
     - name: Create Release Pull Request
       if: github.event_name == 'push'
@@ -55,7 +58,6 @@ runs:
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
 
-    # Only run release on merged PRs from changeset-release branches
     - name: Release
       uses: softprops/action-gh-release@v2
       if: |
