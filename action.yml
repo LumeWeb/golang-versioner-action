@@ -13,7 +13,9 @@ runs:
     - name: Versioner Setup
       shell: bash
       id: versioner
-      if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+      if: |
+        (github.event_name == 'push' && github.ref == 'refs/heads/develop') || 
+        (github.event_name == 'pull_request' && github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'changeset-release/'))
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -40,7 +42,8 @@ runs:
         else
           echo "No changes need to be committed"
         fi
-        echo "VERSION=$(jq -r .version package.json)" >> $GITHUB_OUTPUT
+        VERSION=$(jq -r .version package.json)
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
     - name: Setup PNPM
       if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
